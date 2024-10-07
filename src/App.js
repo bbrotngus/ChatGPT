@@ -8,14 +8,56 @@ import rocket from './assets/rocket.svg';
 import sendBtn from './assets/send.svg';
 import userIcon from './assets/capybara.png';
 import { sendMsgToOpenAI } from './openai';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function App() {
+  const msgEnd = useRef(null);
+
   const [ input, setInput ] = useState("");
+  const [ messages, setMessages ] = useState([
+    {
+      text: "Hi!",
+      isBot: true,
+    }
+  ]);
+
+  useEffect(() => {
+    msgEnd.current.scrollIntoView();
+  },[messages]);
 
   const handleSend = async () => {
-    const res = await sendMsgToOpenAI(input);
-    console.log(res);
+    const text = input;
+    setInput('');
+    setMessages([
+      ...messages,
+      { text, isBot: false }
+    ]);
+
+    const res = await sendMsgToOpenAI(text);
+    setMessages([
+      ...messages, 
+      { text, isBot: false },
+      { text: res, isBot: true}
+    ]);
+  }
+
+  const handleEnter = async (e) => {
+    if(e.key === 'Enter') await handleSend();
+  }
+
+  const handleQuery = async (e) => {
+    const text = e.target.value;
+    setMessages([
+      ...messages,
+      { text, isBot: false }
+    ]);
+
+    const res = await sendMsgToOpenAI(text);
+    setMessages([
+      ...messages, 
+      { text, isBot: false },
+      { text: res, isBot: true}
+    ]);
   }
 
   return (
@@ -23,10 +65,10 @@ function App() {
       <div className="sideBar">
           <div className="upperSide">
             <div className="upperSideTop"><img src={Logo} alt="Logo" className="logo" /><span className="brand">CapyLove</span></div>
-            <button className="midBtn"><img src={addBtn} alt="addBtn" className="addBtn" />New Chat</button>
+            <button className="midBtn" onClick={() => {window.location.reload()}}><img src={addBtn} alt="addBtn" className="addBtn" />New Chat</button>
             <div className="upperSideBottom">
-              <button className="query"><img src={msgIcon} alt="query" />What's Your Hobby?</button>
-              <button className="query"><img src={msgIcon} alt="query" />How to use an API?</button>
+              <button className="query" onClick={handleQuery} value={"What's Your Hobby?"}><img src={msgIcon} alt="query" />What's Your Hobby?</button>
+              <button className="query" onClick={handleQuery} value={"Hi!"}><img src={msgIcon} alt="query" />Hi!</button>
             </div>
           </div>
           <div className="lowerSide">
@@ -38,16 +80,16 @@ function App() {
 
       <div className='main'>
         <div className="chats">
-            <div className="chat">
-              <img className='chatImg' src={userIcon} alt="" /><p className="txt">Lorem ipsum dolor sit amet consectetur adipisicing elit. Velit accusamus molestias vitae laborum officia natus veritatis veniam eum id animi! Voluptates magni voluptatibus, numquam quidem dolorum dolorem ducimus hic quibusdam?</p>
-            </div>
-            <div className="chat bot">
-              <img className='chatImg' src={userIcon} alt="" /><p className="txt">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Blanditiis, nihil veniam recusandae, eos obcaecati sapiente impedit libero similique facilis maxime numquam! Nihil eius iusto quaerat fugiat quam voluptatum praesentium dicta cumque. Quidem obcaecati aperiam assumenda vitae quo quam? Iusto voluptas suscipit, a atque ex praesentium? Labore voluptas excepturi deleniti, nulla tenetur consequuntur maiores obcaecati porro consectetur provident, facilis voluptatem reprehenderit. At, eius animi unde dolor accusantium illo, sit quos in fugit voluptatibus, voluptatum atque quae labore? Deserunt, dolore veniam. Vitae ea mollitia quae nemo tempore aliquam, odit ad rerum sint enim quo repellendus corrupti sed itaque earum ipsum suscipit molestias!</p>
-            </div>
+            {messages.map((message, i) => 
+              <div key={i} className={message.isBot ? "chat bot" : "chat"}>
+                <img className='chatImg' src={userIcon} alt="" /><p className="txt">{ message.text }</p>
+              </div>
+            )}
+            <div ref={msgEnd}/>
         </div>
         <div className="chatFooter">
             <div className="inp">
-              <input type="text" placeholder='Send a message' value={input} onChange={(e) => {setInput(e.target.value)}}/><button className="send" onClick={handleSend}><img src={sendBtn} alt="sendBtn" /></button>
+              <input type="text" placeholder='Send a message' value={input} onKeyDown={handleEnter} onChange={(e) => {setInput(e.target.value)}}/><button className="send" onClick={handleSend}><img src={sendBtn} alt="sendBtn" /></button>
             </div>
           </div> 
       </div>
